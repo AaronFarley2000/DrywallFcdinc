@@ -65,6 +65,8 @@ import { Helmet } from 'react-helmet-async'
 
 export default function ContactPage() {
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   return (
     <>
       <Helmet>
@@ -131,45 +133,46 @@ export default function ContactPage() {
             onSubmit={async (e) => {
               e.preventDefault()
 
+              if (isSubmitting) return
               const form = e.currentTarget
-
-              const formData = new FormData()
-
-              formData.append('entry.415223274', form.fullName.value)
-              formData.append('entry.1096735123', form.companyName.value)
-              formData.append('entry.715839994', form.email.value)
-              formData.append('entry.1507681476', form.phone.value)
-              formData.append('entry.738519468', form.propertyType.value)
-              formData.append('entry.2083865356', form.serviceNeeded.value)
-              formData.append('entry.4913284', form.projectDetails.value)
-
-              await fetch(
-                'https://docs.google.com/forms/d/e/1FAIpQLScYT08-Ck8LXE9IIbPppSWM0IBnKrH1Qs3sjSDcaAD6X-WgrQ/formResponse',
-                {
+              const formData = new FormData(form)
+              const payload = Object.fromEntries(formData.entries())
+              setIsSubmitting(true)
+              setSubmitError('')
+              try {
+                const response = await fetch('/api/submit-contact', {
                   method: 'POST',
-                  mode: 'no-cors',
-                  body: formData,
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                })
+                const result = await response.json()
+                if (!response.ok || result.success !== true) {
+                  throw new Error(result.error || 'Your request could not be sent. Please try again.')
                 }
-              )
-
-              setShowSuccess(true)
-              form.reset()
+                setShowSuccess(true)
+                form.reset()
+              } catch (error) {
+                setSubmitError(error instanceof Error ? error.message : 'Your request could not be sent. Please try again or contact us directly.')
+              } finally {
+                setIsSubmitting(false)
+              }
             }}>
             <h2>Request a Quote</h2>
             <div className="cp-form-grid">
-              <label>Full Name<input type="text" placeholder="Your full name" name="fullName" /></label>
-              <label>Company Name<input type="text" placeholder="Company or organization" name="companyName" /></label>
-              <label>Email Address<input type="email" placeholder="your@email.com" name="email" /></label>
-              <label>Phone Number<input type="tel" placeholder="Phone number" name="phone" /></label>
-              <label>Property Type<input type="text" placeholder="Select property type" name="propertyType" /></label>
-              <label>Service Needed<input type="text" placeholder="Select service needed" name="serviceNeeded" /></label>
+              <label>Full Name<input type="text" placeholder="Your full name" name="fullName" required maxLength={300} /></label>
+              <label>Company Name<input type="text" placeholder="Company or organization" name="companyName" maxLength={300} /></label>
+              <label>Email Address<input type="email" placeholder="your@email.com" name="email" required maxLength={300} /></label>
+              <label>Phone Number<input type="tel" placeholder="Phone number" name="phone" maxLength={300} /></label>
+              <label>Property Type<input type="text" placeholder="Select property type" name="propertyType" maxLength={300} /></label>
+              <label>Service Needed<input type="text" placeholder="Select service needed" name="serviceNeeded" maxLength={300} /></label>
             </div>
             <label className="cp-message-label">
               Project Details
-              <textarea rows={5} placeholder="Tell us about your project details" name="projectDetails" />
+              <textarea rows={5} placeholder="Tell us about your project details" name="projectDetails" required maxLength={5000} />
             </label>
-            <button type="submit" className="btn btn-blue cp-submit">
-              Request Your Free Estimate Today<span aria-hidden="true">→</span>
+            {submitError && <p role="alert">{submitError}</p>}
+            <button type="submit" className="btn btn-blue cp-submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Sending…' : 'Request Your Free Estimate Today'}<span aria-hidden="true">→</span>
             </button>
           </form>
         </div>
