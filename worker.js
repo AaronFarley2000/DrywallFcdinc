@@ -1,13 +1,20 @@
-import { Resend } from 'resend';
+const NOTIFICATION_RECIPIENTS = [
+  'Aaron@farleycdinc.com',
+  'Ashish@farleycdinc.com',
+  'Danny@farleycdinc.com',
+  'Kyle@farleycdinc.com',
+];
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     // ── API route ──────────────────────────────────────────────────────────────
-    if (url.pathname === '/api/submit-estimate') {
+    if (url.pathname === '/api/submit-estimate' || url.pathname === '/api/submit-contact') {
       if (request.method === 'POST') {
-        return handleSubmitEstimate(request, env);
+        return url.pathname === '/api/submit-contact'
+          ? handleSubmitContact(request, env)
+          : handleSubmitEstimate(request, env);
       }
       return new Response(
         JSON.stringify({ success: false, error: 'Method Not Allowed' }), 
@@ -232,13 +239,7 @@ async function handleSubmitEstimate(request, env) {
 
     const emailPayload = {
       from: 'Drywall@farleycdinc.com',
-      to: [
-        'Aaron@farleycdinc.com',
-        'Ashish@farleycdinc.com',
-        'Kyle@farleycdinc.com',
-        'Facilities@farleycdinc.com'
-      ],
-      // to:"h.kansara106@gmail.com",
+      to: NOTIFICATION_RECIPIENTS,
       subject: `New Estimate Request — ${contact?.clientName || contact?.fullName || 'Client'} — $${estimateTotal}`,
       html,
     };
@@ -275,5 +276,62 @@ async function handleSubmitEstimate(request, env) {
       JSON.stringify({ success: false, error: 'Internal server error while processing the request.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
+  }
+}
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status, headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+async function handleSubmitContact(request, env) {
+  if (!env.RESEND_API_KEY) {
+    return jsonResponse({ success: false, error: 'Email service is unavailable. Please call or email us directly.' }, 503);
+  }
+  let input;
+  try {
+    input = await request.json();
+  } catch {
+    return jsonResponse({ success: false, error: 'Invalid submission.' }, 400);
+  }
+  const fields = ['fullName', 'companyName', 'email', 'phone', 'propertyType', 'serviceNeeded', 'projectDetails'];
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      fields.some(key => typeof input[key] !== 'string' || input[key].length > (key === 'projectDetails' ? 5000 : 300))) {
+    return jsonResponse({ success: false, error: 'Please check your contact information and project details.' }, 400);
+  }
+  const values = Object.fromEntries(fields.map(key => [key, input[key].trim()]));
+  if (!values.fullName || !values.projectDetails || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+    return jsonResponse({ success: false, error: 'Name, a valid email address, and project details are required.' }, 400);
+  }
+  const escapeHtml = value => value.replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[char]));
+  const labels = {
+    fullName: 'Name', companyName: 'Company', email: 'Email', phone: 'Phone',
+    propertyType: 'Property type', serviceNeeded: 'Service needed', projectDetails: 'Project details',
+  };
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Drywall@farleycdinc.com',
+        to: NOTIFICATION_RECIPIENTS,
+        reply_to: values.email,
+        subject: `New Website Quote Request — ${values.fullName.replace(/[\r\n]/g, ' ')}`,
+        text: fields.map(key => `${labels[key]}: ${values[key] || '—'}`).join('\n'),
+        html: '<h1>New Website Quote Request</h1>' + fields.map(key =>
+          `<p><strong>${labels[key]}:</strong><br>${escapeHtml(values[key] || '—').replace(/\n/g, '<br>')}</p>`
+        ).join(''),
+      }),
+    });
+    if (!response.ok) {
+      console.error('Contact notification rejected by email service:', response.status);
+      return jsonResponse({ success: false, error: 'We could not send your request. Please try again or contact us directly.' }, 502);
+    }
+    return jsonResponse({ success: true });
+  } catch {
+    return jsonResponse({ success: false, error: 'We could not send your request. Please try again or contact us directly.' }, 502);
   }
 }
