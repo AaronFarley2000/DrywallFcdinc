@@ -238,7 +238,7 @@ async function handleSubmitEstimate(request, env) {
     }
 
     const emailPayload = {
-      from: 'Drywall@farleycdinc.com',
+      from: 'Farley Construction <website@notifications.farleycdinc.com>',
       to: NOTIFICATION_RECIPIENTS,
       subject: `New Estimate Request — ${contact?.clientName || contact?.fullName || 'Client'} — $${estimateTotal}`,
       html,
@@ -316,7 +316,7 @@ async function handleSubmitContact(request, env) {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Drywall@farleycdinc.com',
+        from: 'Farley Construction <website@notifications.farleycdinc.com>',
         to: NOTIFICATION_RECIPIENTS,
         reply_to: values.email,
         subject: `New Website Quote Request — ${values.fullName.replace(/[\r\n]/g, ' ')}`,
