@@ -22,5 +22,11 @@
       "head_sampling_rate": 1,
       "persist": true
     }
+  },
+  "previews": {},
+  "secrets": {
+    "required": [
+      "RESEND_API_KEY"
+    ]
   }
 }
