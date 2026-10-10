@@ -1,10 +1,14 @@
 {
-  "name": "farley",
+  "name": "drywallfcdinc",
   "compatibility_date": "2026-07-08",
   "main": "worker.js",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "observability": {
     "logs": {
