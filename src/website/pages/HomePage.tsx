@@ -119,7 +119,7 @@ export default function HomePage() {
             <div className="btn-row">
               <Link
                 to="/priceestimator" className="btn btn-orange">Get a Free Estimate<span aria-hidden="true">→</span></Link>
-              <a href="tel:+19497924283" className="btn btn-glass">Call Now<span aria-hidden="true">→</span></a>
+              <a href="tel:+19499895597" className="btn btn-glass">Call Now<span aria-hidden="true">→</span></a>
             </div>
             <div className="hero-avatars">
               <img src="/images/image3.png" alt="Customer review avatars" className="review-img" />
@@ -376,7 +376,7 @@ export default function HomePage() {
                 <span className="ci-icon" aria-hidden="true">
                   <img src="/images/telephone.png" alt="" className="img-contain" />
                 </span>
-                <div><strong>Phone</strong><span>(949) 989 5597</span></div>
+                <div><strong>Phone</strong><span>(949) 989-5597</span></div>
               </li>
               <li>
                 <span className="ci-icon" aria-hidden="true">

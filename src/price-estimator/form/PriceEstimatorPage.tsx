@@ -96,8 +96,8 @@ const NEXT_STEPS = [
   'Your quote lands within 24 hours',
 ];
 
-const PHONE = '(949) 989 5597';
-const PHONE_HREF = 'tel:+19497924283';
+const PHONE = '(949) 989-5597';
+const PHONE_HREF = 'tel:+19499895597';
 
 import { Helmet } from 'react-helmet-async'
 function ComingSoonPage() {
